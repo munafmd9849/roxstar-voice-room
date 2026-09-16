@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RoomStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum MembershipStatus {
+  ACTIVE
+  LEFT
+}
+
+enum SpinStatus {
+  WAITING
+  RUNNING
+  COMPLETED
+  ABORTED
+}
+
+enum SpinParticipantStatus {
+  ACTIVE
+  ELIMINATED
+  WINNER
+}
+
+enum SpinEventType {
+  SPIN_STARTED
+  USER_ELIMINATED
+  WINNER_ANNOUNCED
+  SPIN_ABORTED
+}
+
+model User {
+  id                 String            @id @default(cuid())
+  name               String
+  createdAt          DateTime          @default(now())
+  ownedRooms         Room[]            @relation("RoomOwner")
+  roomMemberships    RoomMember[]
+  drafts             Draft[]
+  sharedDrafts       SharedDraft[]     @relation("SharedDraftSharedBy")
+  spinParticipations SpinParticipant[]
+  spinWins           Spin[]            @relation("SpinWinner")
+  spinEvents         SpinEvent[]
+}
+
+model Room {
+  id           String        @id @default(cuid())
+  code         String        @unique
+  ownerId      String
+  status       RoomStatus    @default(ACTIVE)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  owner        User          @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  members      RoomMember[]
+  sharedDrafts SharedDraft[]
+  spins        Spin[]
+
+  @@index([ownerId])
+  @@index([status])
+}
+
+model RoomMember {
+  id          String           @id @default(cuid())
+  roomId      String
+  userId      String
+  status      MembershipStatus @default(ACTIVE)
+  isConnected Boolean          @default(false)
+  joinedAt    DateTime         @default(now())
+  leftAt      DateTime?
+  room        Room             @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user        User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([roomId, userId])
+  @@index([roomId, status])
+  @@index([userId])
+}
+
+model Draft {
+  id         String        @id @default(cuid())
+  userId     String
+  name       String
+  filePath   String
+  durationMs Int
+  createdAt  DateTime      @default(now())
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sharedIn   SharedDraft[]
+
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model SharedDraft {
+  id         String   @id @default(cuid())
+  roomId     String
+  draftId    String
+  sharedById String
+  sharedAt   DateTime @default(now())
+  room       Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  draft      Draft    @relation(fields: [draftId], references: [id], onDelete: Restrict)
+  sharedBy   User     @relation("SharedDraftSharedBy", fields: [sharedById], references: [id], onDelete: Restrict)
+
+  @@index([roomId, sharedAt(sort: Desc)])
+}
+
+model Spin {
+  id          String    @id @default(cuid())
+  roomId      String
+  status      SpinStatus @default(WAITING)
+  startedAt   DateTime?
+  completedAt DateTime?
+  winnerId    String?
+  version     Int       @default(1)
+  room        Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  winner      User?     @relation("SpinWinner", fields: [winnerId], references: [id], onDelete: SetNull)
+  participants SpinParticipant[]
+  events      SpinEvent[]
+
+  // The later Spin service must enforce one active spin per room transactionally.
+  @@index([roomId, status])
+  @@index([winnerId])
+}
+
+model SpinParticipant {
+  id               String                @id @default(cuid())
+  spinId           String
+  userId           String
+  status           SpinParticipantStatus @default(ACTIVE)
+  position         Int
+  eliminationOrder Int?
+  eliminatedAt     DateTime?
+  spin             Spin                  @relation(fields: [spinId], references: [id], onDelete: Cascade)
+  user             User                  @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([spinId, userId])
+  @@unique([spinId, position])
+  @@index([spinId, status])
+}
+
+model SpinEvent {
+  id        String        @id @default(cuid())
+  spinId    String
+  type      SpinEventType
+  userId    String?
+  sequence  Int
+  metadata  Json?
+  createdAt DateTime      @default(now())
+  spin      Spin          @relation(fields: [spinId], references: [id], onDelete: Cascade)
+  user      User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([spinId, sequence])
+}
