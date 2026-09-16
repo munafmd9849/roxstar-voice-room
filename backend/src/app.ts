@@ -7,6 +7,7 @@ import swaggerUi from "swagger-ui-express";
 import { errorHandler } from "./middleware/error-handler.js";
 import { openapiDocument } from "./config/openapi.js";
 import roomRouter from "./routes/room.routes.js";
+import draftRouter from "./routes/draft.routes.js";
 import userRouter from "./routes/user.routes.js";
 
 const app = express();
@@ -26,6 +27,7 @@ app.get("/health", (_request, response) => {
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openapiDocument));
 
 app.use("/api/users", userRouter);
+app.use("/api/drafts", draftRouter);
 app.use("/api/rooms", roomRouter);
 
 app.use(errorHandler);

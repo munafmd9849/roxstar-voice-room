@@ -47,8 +47,7 @@ Start PostgreSQL and configure `DATABASE_URL` as above, then run the API with
 state is read from the database for every response.
 
 `RoomMember.isConnected` remains `false` for all HTTP operations. Joining or leaving
-through REST is membership management, not Socket.IO presence. Realtime events and
-the Socket.IO presence model are not implemented yet.
+through REST is membership management, not Socket.IO presence.
 
 ### Create user
 
@@ -112,3 +111,113 @@ create. With `DATABASE_URL` available:
 cd backend
 npm test
 ```
+
+## Phase 4: Socket.IO room presence
+
+Socket.IO runs on the same HTTP server and port as Express. REST APIs remain the
+authoritative way to create, join, and leave room memberships. A socket cannot create
+or delete a membership; it can establish realtime presence only after the user is an
+active `RoomMember` created through the REST API.
+
+### Client to server events
+
+- `room:join` — joins realtime presence after validating active membership:
+
+  ```json
+  { "roomId": "room-id", "userId": "user-id" }
+  ```
+
+- `room:leave` — leaves realtime presence without changing membership:
+
+  ```json
+  { "roomId": "room-id" }
+  ```
+
+- `room:state` — requests authoritative database state for a room the socket joined:
+
+  ```json
+  { "roomId": "room-id" }
+  ```
+
+### Server to client events
+
+- `room_state` — matches `GET /api/rooms/:roomId`:
+
+  ```json
+  { "room": { "id": "...", "code": "...", "ownerId": "...", "status": "ACTIVE" }, "participants": [] }
+  ```
+
+- `user_joined` — emitted to other sockets when a user first becomes present:
+
+  ```json
+  { "roomId": "...", "userId": "...", "name": "Munaf", "joinedAt": "2026-09-16T00:00:00.000Z" }
+  ```
+
+- `user_left` — emitted only after a user's final socket leaves:
+
+  ```json
+  { "roomId": "...", "userId": "...", "leftAt": "2026-09-16T00:00:00.000Z" }
+  ```
+
+- `socket:error` — structured validation, access, and server errors.
+
+Reconnect by sending `room:join` again. The server revalidates the active membership,
+updates presence, and sends a new authoritative `room_state`. Multiple sockets for one
+user keep `isConnected` true until the last socket leaves; disconnecting never changes
+membership status to `LEFT`.
+
+Phase 4 does **not** implement `draft_shared`, `spin_started`, `user_eliminated`, or
+`winner_announced`; those events and their business behavior belong to later phases.
+
+### Manual Socket.IO check
+
+Create two active room members using the REST APIs, then run the backend and launch a
+client for each member in separate terminals:
+
+```bash
+cd backend
+npm run dev
+npm run socket:manual -- <roomId> <userId-for-client-a>
+npm run socket:manual -- <roomId> <userId-for-client-b>
+```
+
+Client A receives `user_joined` when B joins and `user_left` when B exits. Restart B's
+client and it sends `room:join` again, receiving the latest `room_state`.
+
+## Spin engine
+
+The room owner starts a spin with:
+
+```http
+POST /api/rooms/:roomId/spin/start
+Content-Type: application/json
+
+{ "userId": "owner-user-id" }
+```
+
+`GET /api/rooms/:roomId/spin` returns the latest spin, its participant statuses,
+winner, timestamps, and ordered event history.
+
+### Lifecycle and eligibility
+
+- A room must be `ACTIVE`; its owner must also be an active room member.
+- Exactly 3–20 active members are eligible. More than 20 members is rejected rather
+  than silently excluding people.
+- The persisted lifecycle is `WAITING` → `RUNNING` → `COMPLETED`, with `ABORTED`
+  reserved for a running spin that has no valid eligible participant left.
+- A per-spin timer eliminates one participant every five seconds. The final remaining
+  eligible participant is persisted as the single winner.
+- Events are persisted before broadcast, with deterministic sequences: `SPIN_STARTED`,
+  `USER_ELIMINATED` for each elimination, then `WINNER_ANNOUNCED` (or `SPIN_ABORTED`).
+
+### Realtime spin events
+
+Sockets already present in `room:<roomId>` receive `spin_started`,
+`user_eliminated`, and `winner_announced`. `room_state` now includes the latest spin,
+so reconnecting clients can issue the existing `room:join` / `room:state` flow and
+recover the authoritative state.
+
+If a member leaves through the REST API during a running spin, that participant is
+immediately persisted as eliminated; membership remains historical and the spin
+continues with valid active members. This prevents a departed member from winning.
+Only one active (`WAITING` or `RUNNING`) spin can be created for a room at a time.
