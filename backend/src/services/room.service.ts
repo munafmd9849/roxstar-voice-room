@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 
 import { getPrismaClient } from "../config/database.js";
 import { AppError } from "../errors/app-error.js";
+import { mapSpinState, type SpinState } from "./spin-state.js";
 
 const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const ROOM_CODE_LENGTH = 6;
@@ -21,6 +22,7 @@ type RoomState = {
     name: string;
     status: "ACTIVE";
   }>;
+  spin: SpinState | null;
 };
 
 function generateRoomCode(): string {
@@ -56,6 +58,21 @@ async function requireRoom(roomId: string) {
   return room;
 }
 
+export async function verifyActiveRoomMembership(roomId: string, userId: string) {
+  const user = await requireUser(userId);
+  const room = await requireRoom(roomId);
+  const membership = await getPrismaClient().roomMember.findUnique({
+    where: { roomId_userId: { roomId, userId } },
+    select: { status: true }
+  });
+
+  if (membership?.status !== "ACTIVE") {
+    throw new AppError(403, "NOT_A_ROOM_MEMBER", "User is not an active room member.");
+  }
+
+  return { user, room };
+}
+
 export async function getRoomState(roomId: string): Promise<RoomState> {
   const room = await getPrismaClient().room.findUnique({
     where: { id: roomId },
@@ -73,6 +90,15 @@ export async function getRoomState(roomId: string): Promise<RoomState> {
           userId: true,
           status: true,
           user: { select: { name: true } }
+        }
+      },
+      spins: {
+        orderBy: { startedAt: "desc" },
+        take: 1,
+        include: {
+          winner: { select: { id: true, name: true } },
+          participants: { include: { user: { select: { name: true } } } },
+          events: true
         }
       }
     }
@@ -95,7 +121,8 @@ export async function getRoomState(roomId: string): Promise<RoomState> {
       userId: member.userId,
       name: member.user.name,
       status: "ACTIVE"
-    }))
+    })),
+    spin: room.spins[0] ? mapSpinState(room.spins[0]) : null
   };
 }
 
@@ -215,6 +242,8 @@ export async function leaveRoom(roomId: string, userId: string): Promise<RoomSta
     where: { roomId_userId: { roomId, userId } },
     data: { status: "LEFT", isConnected: false, leftAt: new Date() }
   });
+  const { handleSpinParticipantDeparture } = await import("./spin.service.js");
+  await handleSpinParticipantDeparture(roomId, userId);
 
   return { ...(await getRoomState(roomId)), alreadyLeft: false };
 }
