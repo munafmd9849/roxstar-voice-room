@@ -2,8 +2,10 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
+import swaggerUi from "swagger-ui-express";
 
 import { errorHandler } from "./middleware/error-handler.js";
+import { openapiDocument } from "./config/openapi.js";
 import roomRouter from "./routes/room.routes.js";
 import userRouter from "./routes/user.routes.js";
 
@@ -20,6 +22,8 @@ app.get("/health", (_request, response) => {
     service: "roxstar-backend"
   });
 });
+
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openapiDocument));
 
 app.use("/api/users", userRouter);
 app.use("/api/rooms", roomRouter);
