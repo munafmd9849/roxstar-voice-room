@@ -3,6 +3,10 @@ import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 
+import { errorHandler } from "./middleware/error-handler.js";
+import roomRouter from "./routes/room.routes.js";
+import userRouter from "./routes/user.routes.js";
+
 const app = express();
 
 app.use(express.json());
@@ -16,5 +20,10 @@ app.get("/health", (_request, response) => {
     service: "roxstar-backend"
   });
 });
+
+app.use("/api/users", userRouter);
+app.use("/api/rooms", roomRouter);
+
+app.use(errorHandler);
 
 export default app;
