@@ -1,5 +1,36 @@
 # RoxStar Voice Room
 
+Android voice drafts, realtime rooms, and a backend-owned spin wheel.
+
+Audio stays on the phone (Oboe → echo → WAV). The Node backend is authoritative for rooms, draft metadata, and spin eliminations. PostgreSQL is the source of truth.
+
+| Area | Points | Status |
+| --- | --- | --- |
+| Android Audio Studio / Oboe | 40 | Done |
+| Room + Realtime | 40 | Done |
+| Spin Wheel | 50 | Done |
+| Backend + Database | 30 | Done (25/25 tests) |
+| Cloud + DevOps | 20 | Docker + GitHub Actions done; **public HTTPS URL still needed** |
+| Documentation + Communication | 20 | Done |
+
+### Left before submission
+
+1. **Host the backend** on AWS, GCP, or Azure and paste the HTTPS URL into the Android **Backend URL** field. Local Docker is not the hosted endpoint. See `docs/deployment.md`.
+2. **Record the 5–10 minute demo** using the checklist in `docs/demo.md`.
+
+### Quick start
+
+```bash
+docker compose -f infrastructure/docker-compose.yml up -d --build
+curl http://localhost:3000/health
+cd android-app && ./gradlew assembleDebug
+```
+
+Emulator backend URL: `http://10.0.2.2:3000`  
+Phone on the same Wi‑Fi: `http://YOUR-LAN-IP:3000`
+
+Layout: `android-app/` · `android-app/app/src/main/cpp/` (Oboe) · `backend/` · `database/` · `infrastructure/` · `docs/`
+
 ## Phase 2: local database setup
 
 This phase provides the PostgreSQL and Prisma database foundation only. Room APIs,
@@ -289,10 +320,18 @@ Google Oboe is pulled in as `com.google.oboe:oboe:1.9.3` and linked through CMak
 
 ### Verification status
 
-- COMPILED: yes (`cd android-app && ./gradlew assembleDebug` succeeded; APK at `android-app/app/build/outputs/apk/debug/app-debug.apk`)
-- Backend tests: 25/25 passing when PostgreSQL is running (`docker compose -f infrastructure/docker-compose.yml up -d`)
-- TESTED ON EMULATOR: no (emulator system image is not installed)
-- TESTED ON PHYSICAL DEVICE: no
+- COMPILED: yes (`cd android-app && ./gradlew assembleDebug`)
+- Backend tests: 25/25 passing when PostgreSQL is running
+- TESTED ON EMULATOR: yes (AVD `RoxStar_API35`, Android 15 x86_64)
+  - Create user against `http://10.0.2.2:3000`
+  - Oboe record / stop produced a valid mono 16-bit 44.1 kHz WAV
+  - Save / list / play draft; metadata synced to `POST /api/drafts`
+  - Create room, see Rahul and Ahmed join, share draft, start spin
+  - Eliminations every 5 seconds, winner Ahmed, socket disconnect/reconnect kept membership
+- TESTED ON PHYSICAL DEVICE: yes (Xiaomi 22101316I / Redmi Note 12 Pro)
+  - User `sai`, backend URL `http://10.7.9.169:3000` (same Wi‑Fi as the laptop)
+  - Record / save / play drafts, join and create rooms, owner-only spin
+  - Phone must stay on the laptop LAN; mobile data cannot reach `10.7.9.169`
 
 ## Docker and CI
 
@@ -305,7 +344,7 @@ curl http://localhost:3000/health
 
 If backend tests fail with `Can't reach database server at 127.0.0.1:5432`, PostgreSQL is not running. Start it with the compose command above, then `cd backend && npm test`.
 
-CI is in `.github/workflows/ci.yml`: install, migrate, `npm test`, `npm run build`, Docker image build.
+CI is in `.github/workflows/ci.yml`: install, migrate, `npm test`, `npm run build`, Docker image build, and push to GitHub Container Registry on `main`.
 
 Diagrams and edge cases:
 

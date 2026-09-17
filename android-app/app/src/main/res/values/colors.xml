@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_700">#6750A4</color>
+    <color name="md_primary">#5B3CC4</color>
+    <color name="md_on_primary">#FFFFFF</color>
+    <color name="md_primary_container">#E9DFFF</color>
+    <color name="md_surface">#F6F3FB</color>
+    <color name="md_card">#FFFFFF</color>
+    <color name="md_text">#1C1630</color>
+    <color name="md_muted">#6B6280</color>
+    <color name="md_connected">#0F766E</color>
+    <color name="md_disconnected">#B42318</color>
+    <color name="md_winner">#9A3412</color>
+    <color name="md_running">#1D4ED8</color>
+    <color name="purple_700">#5B3CC4</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 </resources>

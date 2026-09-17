@@ -37,6 +37,11 @@ class DraftsFragment : Fragment() {
         return view.root
     }
 
+    override fun onResume() {
+        super.onResume()
+        (activity as? androidx.appcompat.app.AppCompatActivity)?.supportActionBar?.title = "Drafts"
+    }
+
     private fun play(draft: DraftEntity) {
         val file = File(draft.filePath)
         if (!file.exists()) {

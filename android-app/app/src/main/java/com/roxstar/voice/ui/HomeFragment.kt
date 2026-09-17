@@ -34,6 +34,7 @@ class HomeFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+        (activity as? androidx.appcompat.app.AppCompatActivity)?.supportActionBar?.title = "RoxStar Voice"
         val roomCode = RoxStarApp.instance.session.currentRoomCode
         binding?.roomHint?.text = if (roomCode.isNullOrBlank()) {
             "Not in a room"

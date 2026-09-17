@@ -11,6 +11,10 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        setSupportActionBar(findViewById(R.id.toolbar))
+        supportFragmentManager.addOnBackStackChangedListener {
+            supportActionBar?.setDisplayHomeAsUpEnabled(supportFragmentManager.backStackEntryCount > 0)
+        }
         if (savedInstanceState == null) {
             val start = if (RoxStarApp.instance.session.hasUser) {
                 HomeFragment()
@@ -35,6 +39,11 @@ class MainActivity : AppCompatActivity() {
         supportFragmentManager.beginTransaction()
             .replace(R.id.container, HomeFragment())
             .commit()
+    }
+
+    override fun onSupportNavigateUp(): Boolean {
+        onBackPressedDispatcher.onBackPressed()
+        return true
     }
 
     override fun onDestroy() {

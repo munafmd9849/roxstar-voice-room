@@ -1,71 +1,107 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/md_surface"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:padding="20dp">
 
         <TextView
             android:id="@+id/welcome"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="22sp"
-            android:textStyle="bold" />
+            android:textAppearance="@style/TextAppearance.RoxStar.Title" />
 
         <TextView
             android:id="@+id/userId"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
+            android:textAppearance="@style/TextAppearance.RoxStar.Muted"
             android:textIsSelectable="true" />
 
         <TextView
             android:id="@+id/roomHint"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp" />
-
-        <Button
-            android:id="@+id/openRecorder"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="Record" />
-
-        <Button
-            android:id="@+id/openDrafts"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Drafts" />
-
-        <Button
-            android:id="@+id/openRoom"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Room" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="Backend URL"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/md_primary"
             android:textStyle="bold" />
 
-        <EditText
-            android:id="@+id/apiUrl"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/openRecorder"
+            style="@style/Widget.RoxStar.Button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="http://10.0.2.2:3000"
-            android:inputType="textUri" />
+            android:layout_marginTop="24dp"
+            android:text="Record voice" />
 
-        <Button
-            android:id="@+id/saveUrl"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/openDrafts"
+            style="@style/Widget.RoxStar.Button.Tonal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Save API URL" />
+            android:layout_marginTop="10dp"
+            android:text="My drafts" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/openRoom"
+            style="@style/Widget.RoxStar.Button.Tonal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="Room &amp; spin" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            app:cardBackgroundColor="@color/md_card"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#E4DDF3"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Backend URL"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:hint="Backend URL"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/apiUrl"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textUri" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/saveUrl"
+                    style="@style/Widget.RoxStar.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Save API URL" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 </ScrollView>

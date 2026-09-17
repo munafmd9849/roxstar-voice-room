@@ -21,6 +21,5 @@
 
 ## Known limitations
 
-- Android recording/playback has been compiled, not yet run on an emulator or phone.
 - Cloud hosting still needs an AWS/GCP/Azure account and a public HTTPS URL.
 - Local-only Docker Compose is for development. The assessment requires a hosted endpoint for final submission.

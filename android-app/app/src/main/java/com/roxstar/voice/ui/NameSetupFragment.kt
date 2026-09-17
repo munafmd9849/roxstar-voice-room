@@ -20,6 +20,7 @@ class NameSetupFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val view = FragmentNameSetupBinding.inflate(inflater, container, false)
         binding = view
+        (activity as? androidx.appcompat.app.AppCompatActivity)?.supportActionBar?.title = "Get started"
         val app = RoxStarApp.instance
         view.apiUrl.setText(app.session.apiBaseUrl)
         view.createUser.setOnClickListener {

@@ -81,6 +81,7 @@ class RecorderFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+        (activity as? androidx.appcompat.app.AppCompatActivity)?.supportActionBar?.title = "Recorder"
         renderFromNative()
         if (NativeRecorder.isRecording()) {
             handler.post(ticker)
@@ -187,6 +188,8 @@ class RecorderFragment : Fragment() {
             return
         }
         val duration = NativeRecorder.durationMs().coerceAtLeast(1)
+        val imm = requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        imm.hideSoftInputFromWindow(view.root.windowToken, 0)
         view.saveDraft.isEnabled = false
         viewLifecycleOwner.lifecycleScope.launch {
             try {

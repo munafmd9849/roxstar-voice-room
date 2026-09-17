@@ -51,6 +51,11 @@ class SpinFragment : Fragment() {
         return view.root
     }
 
+    override fun onResume() {
+        super.onResume()
+        (activity as? androidx.appcompat.app.AppCompatActivity)?.supportActionBar?.title = "Spin"
+    }
+
     override fun onDestroyView() {
         binding = null
         super.onDestroyView()

@@ -52,6 +52,11 @@ class RoomFragment : Fragment() {
         return view.root
     }
 
+    override fun onResume() {
+        super.onResume()
+        (activity as? androidx.appcompat.app.AppCompatActivity)?.supportActionBar?.title = "Room"
+    }
+
     private fun shareSelected() {
         val index = binding?.draftPicker?.selectedItemPosition ?: -1
         val draft = drafts.getOrNull(index)
