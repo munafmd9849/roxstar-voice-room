@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Room"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/connection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Socket: Disconnected" />
+
+        <LinearLayout
+            android:id="@+id/lobby"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <Button
+                android:id="@+id/createRoom"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Create Room" />
+
+            <EditText
+                android:id="@+id/roomCodeInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Room code"
+                android:inputType="textCapCharacters"
+                android:maxLength="6" />
+
+            <Button
+                android:id="@+id/joinRoom"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Join Room" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/session"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Participants"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/participants"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="My drafts"
+                android:textStyle="bold" />
+
+            <Spinner
+                android:id="@+id/draftPicker"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <Button
+                android:id="@+id/shareDraft"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Share Draft" />
+
+            <Button
+                android:id="@+id/openSpin"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Spin" />
+
+            <Button
+                android:id="@+id/refreshRoom"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Refresh room state" />
+
+            <Button
+                android:id="@+id/disconnectSocket"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Disconnect socket" />
+
+            <Button
+                android:id="@+id/reconnectSocket"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Reconnect socket" />
+
+            <Button
+                android:id="@+id/leaveRoom"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Leave Room" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Events"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/events"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

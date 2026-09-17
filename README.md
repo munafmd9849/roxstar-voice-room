@@ -221,3 +221,102 @@ If a member leaves through the REST API during a running spin, that participant 
 immediately persisted as eliminated; membership remains historical and the spin
 continues with valid active members. This prevents a departed member from winning.
 Only one active (`WAITING` or `RUNNING`) spin can be created for a room at a time.
+
+## Android app
+
+The Android client lives in `android-app/`. It records locally with Oboe, stores drafts on-device, and talks to the existing backend over REST and Socket.IO. Audio bytes are never uploaded.
+
+### Audio flow
+
+```
+Microphone → Oboe → Echo → PCM/WAV → app-private storage → local Draft → playback
+```
+
+### Room flow
+
+```
+Android → REST / Socket.IO → Node backend → PostgreSQL
+```
+
+The backend remains authoritative for membership, shared draft metadata, and spin elimination. Android does not run a second spin timer.
+
+### Requirements
+
+- JDK 17+ (this machine uses Java 21)
+- Android SDK with platform 35, Build-Tools, NDK 27.2.12479018, and CMake 3.30.5
+- Kotlin 2.1 (provided by the Gradle plugins)
+
+### Build
+
+```bash
+cd android-app
+./gradlew assembleDebug
+```
+
+Install the debug APK from `android-app/app/build/outputs/apk/debug/app-debug.apk`.
+
+### Run
+
+1. Start PostgreSQL and the backend (`cd backend && npm run dev`).
+2. Install the app on an emulator or device.
+3. On first launch, enter a display name. The app calls `POST /api/users` and stores the returned `userId`.
+4. Allow microphone permission when recording.
+
+### Backend URL
+
+The compile-time default is `BuildConfig.API_BASE_URL` in `android-app/app/build.gradle.kts`:
+
+- Android emulator: `http://10.0.2.2:3000`
+- Physical device: `http://YOUR-UBUNTU-LAN-IP:3000` (example: `http://192.168.1.15:3000`)
+
+Change it in two places if needed:
+
+1. `buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3000\"")` for a new default
+2. The in-app **Backend URL** field on the first-launch and Home screens (saved locally and reused by REST and Socket.IO)
+
+Cleartext HTTP is enabled for local development only.
+
+### Native / Oboe
+
+Native sources are under `android-app/app/src/main/cpp/`:
+
+- `recorder.cpp` — Oboe input stream, start/stop/cancel, recording states
+- `echo_processor.cpp` — delay-line echo (~250 ms, decay 0.4)
+- `wav_writer.cpp` — mono 16-bit PCM WAV
+- `jni_bridge.cpp` — Kotlin JNI boundary
+
+Google Oboe is pulled in as `com.google.oboe:oboe:1.9.3` and linked through CMake Prefab.
+
+### Verification status
+
+- COMPILED: yes (`cd android-app && ./gradlew assembleDebug` succeeded; APK at `android-app/app/build/outputs/apk/debug/app-debug.apk`)
+- Backend tests: 25/25 passing when PostgreSQL is running (`docker compose -f infrastructure/docker-compose.yml up -d`)
+- TESTED ON EMULATOR: no (emulator system image is not installed)
+- TESTED ON PHYSICAL DEVICE: no
+
+## Docker and CI
+
+Local full stack:
+
+```bash
+docker compose -f infrastructure/docker-compose.yml up -d --build
+curl http://localhost:3000/health
+```
+
+If backend tests fail with `Can't reach database server at 127.0.0.1:5432`, PostgreSQL is not running. Start it with the compose command above, then `cd backend && npm test`.
+
+CI is in `.github/workflows/ci.yml`: install, migrate, `npm test`, `npm run build`, Docker image build.
+
+Diagrams and edge cases:
+
+- `docs/architecture.md`
+- `docs/audio-flow.md`
+- `docs/room-events.md`
+- `docs/spin-state.md`
+- `docs/edge-cases.md`
+- `docs/deployment.md`
+
+API docs remain at `http://localhost:3000/api/docs` while the backend is running.
+
+Cloud hosting on AWS/GCP/Azure is still required for final submission. See `docs/deployment.md`.
+

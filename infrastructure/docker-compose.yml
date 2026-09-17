@@ -17,5 +17,20 @@ services:
       retries: 10
       start_period: 10s
 
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: roxstar-backend
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://roxstar:roxstar_local_dev@postgres:5432/roxstar?schema=public
+      PORT: 3000
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   roxstar_postgres_data:
