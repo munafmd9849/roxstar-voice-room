@@ -19,7 +19,13 @@ class SessionStore(context: Context) {
         }
 
     var apiBaseUrl: String
-        get() = prefs.getString(KEY_API_URL, BuildConfig.API_BASE_URL)?.trim().orEmpty().ifBlank { BuildConfig.API_BASE_URL }
+        get() {
+            val stored = prefs.getString(KEY_API_URL, null)?.trim().orEmpty()
+            if (stored.isBlank() || isLegacyLocalUrl(stored)) {
+                return BuildConfig.API_BASE_URL
+            }
+            return stored
+        }
         set(value) {
             val normalized = value.trim().trimEnd('/')
             prefs.edit().putString(KEY_API_URL, normalized.ifBlank { BuildConfig.API_BASE_URL }).apply()
@@ -42,6 +48,30 @@ class SessionStore(context: Context) {
 
     fun clearRoom() {
         prefs.edit().remove(KEY_ROOM_ID).remove(KEY_ROOM_CODE).apply()
+    }
+
+    fun clearUser() {
+        prefs.edit()
+            .remove(KEY_USER_ID)
+            .remove(KEY_USER_NAME)
+            .remove(KEY_ROOM_ID)
+            .remove(KEY_ROOM_CODE)
+            .apply()
+    }
+
+    fun pinCloudUrl() {
+        if (isLegacyLocalUrl(prefs.getString(KEY_API_URL, "") ?: "")) {
+            prefs.edit().remove(KEY_API_URL).apply()
+        }
+        apiBaseUrl = BuildConfig.API_BASE_URL
+    }
+
+    private fun isLegacyLocalUrl(url: String): Boolean {
+        val value = url.lowercase()
+        return value.contains("10.0.2.2") ||
+            value.contains("10.7.9.169") ||
+            value.contains("127.0.0.1") ||
+            value.contains("localhost")
     }
 
     companion object {

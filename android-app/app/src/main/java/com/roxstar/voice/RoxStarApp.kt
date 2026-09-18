@@ -23,6 +23,7 @@ class RoxStarApp : Application() {
         super.onCreate()
         instance = this
         session = SessionStore(this)
+        session.pinCloudUrl()
         db = AppDatabase.create(this)
         api = ApiClient(session.apiBaseUrl)
         sockets = SocketManager(api.gson) { api.baseUrl }

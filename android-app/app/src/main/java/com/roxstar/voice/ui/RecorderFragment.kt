@@ -19,6 +19,7 @@ import androidx.lifecycle.lifecycleScope
 import com.roxstar.voice.RoxStarApp
 import com.roxstar.voice.audio.NativeRecorder
 import com.roxstar.voice.audio.RecordingState
+import com.roxstar.voice.audio.label
 import com.roxstar.voice.data.remote.ApiException
 import com.roxstar.voice.databinding.FragmentRecorderBinding
 import com.roxstar.voice.util.formatDuration
@@ -55,7 +56,7 @@ class RecorderFragment : Fragment() {
     private val ticker = object : Runnable {
         override fun run() {
             val view = binding ?: return
-            view.state.text = NativeRecorder.state().name
+            view.state.text = NativeRecorder.state().label()
             view.timer.text = formatDuration(NativeRecorder.durationMs())
             if (NativeRecorder.state() == RecordingState.RECORDING) {
                 handler.postDelayed(this, 200)
@@ -123,7 +124,7 @@ class RecorderFragment : Fragment() {
         val started = NativeRecorder.start(target.absolutePath, lastEcho)
         if (!started) {
             view.status.text = NativeRecorder.lastError() ?: "Could not start recording."
-            view.state.text = NativeRecorder.state().name
+            view.state.text = NativeRecorder.state().label()
             refreshButtons()
             return
         }
@@ -140,22 +141,23 @@ class RecorderFragment : Fragment() {
         if (NativeRecorder.state() != RecordingState.RECORDING) {
             return
         }
-        view.state.text = RecordingState.STOPPING.name
+        view.state.text = RecordingState.STOPPING.label()
         val path = NativeRecorder.stop()
         handler.removeCallbacks(ticker)
         if (path == null) {
             view.status.text = NativeRecorder.lastError() ?: "Stop failed."
-            view.state.text = NativeRecorder.state().name
+            view.state.text = NativeRecorder.state().label()
             refreshButtons()
             return
         }
         lastPath = path
         view.timer.text = formatDuration(NativeRecorder.durationMs())
-        view.state.text = RecordingState.SAVED.name
-        view.status.text = "Saved WAV. Enter a name to keep this draft."
+        view.state.text = RecordingState.SAVED.label()
+        view.status.text = "Saving draft..."
         view.draftName.setText("Draft ${System.currentTimeMillis() % 1000}")
         view.savePanel.visibility = View.VISIBLE
         refreshButtons()
+        saveDraft()
     }
 
     private fun cancelRecording() {
@@ -165,7 +167,7 @@ class RecorderFragment : Fragment() {
         val view = binding ?: return
         view.savePanel.visibility = View.GONE
         view.timer.text = "0:00"
-        view.state.text = RecordingState.CANCELLED.name
+        view.state.text = RecordingState.CANCELLED.label()
         view.status.text = "Recording discarded."
         refreshButtons()
     }
@@ -218,7 +220,7 @@ class RecorderFragment : Fragment() {
     private fun renderFromNative() {
         val view = binding ?: return
         val state = NativeRecorder.state()
-        view.state.text = state.name
+        view.state.text = state.label()
         view.timer.text = formatDuration(NativeRecorder.durationMs())
         view.savePanel.visibility = if (state == RecordingState.SAVED && lastPath != null) View.VISIBLE else View.GONE
         refreshButtons()

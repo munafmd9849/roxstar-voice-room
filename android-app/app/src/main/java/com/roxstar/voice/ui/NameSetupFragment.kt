@@ -23,6 +23,11 @@ class NameSetupFragment : Fragment() {
         (activity as? androidx.appcompat.app.AppCompatActivity)?.supportActionBar?.title = "Get started"
         val app = RoxStarApp.instance
         view.apiUrl.setText(app.session.apiBaseUrl)
+        view.showServer.setOnClickListener {
+            val open = view.serverPanel.visibility != View.VISIBLE
+            view.serverPanel.visibility = if (open) View.VISIBLE else View.GONE
+            view.showServer.text = if (open) "Hide server" else "Use a different server"
+        }
         view.createUser.setOnClickListener {
             val name = view.userName.text?.toString()?.trim().orEmpty()
             if (name.isEmpty()) {
@@ -31,7 +36,7 @@ class NameSetupFragment : Fragment() {
             }
             app.applyApiBaseUrl(view.apiUrl.text?.toString().orEmpty())
             view.createUser.isEnabled = false
-            view.status.text = "Creating user..."
+            view.status.text = "Setting you up..."
             viewLifecycleOwner.lifecycleScope.launch {
                 try {
                     val user = app.api.call { createUser(CreateUserRequest(name)) }

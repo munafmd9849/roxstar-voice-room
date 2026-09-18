@@ -36,6 +36,9 @@ class RoomViewModel(application: Application) : AndroidViewModel(application) {
     private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 16)
     val messages: SharedFlow<String> = _messages.asSharedFlow()
 
+    private val _sharedDrafts = MutableStateFlow<List<String>>(emptyList())
+    val sharedDrafts: StateFlow<List<String>> = _sharedDrafts
+
     val currentUserId: String? get() = app.session.userId
     val isOwner: Boolean
         get() = roomState.value?.room?.ownerId == currentUserId
@@ -49,7 +52,9 @@ class RoomViewModel(application: Application) : AndroidViewModel(application) {
                     is RoomRealtimeEvent.DraftShared -> {
                         val owner = event.payload.sharedBy?.name ?: "Someone"
                         val title = event.payload.draft?.name ?: "a draft"
-                        append("$owner shared \"$title\"")
+                        val line = "$owner shared \"$title\""
+                        append(line)
+                        _sharedDrafts.value = (_sharedDrafts.value + line).distinct().takeLast(20)
                         _messages.tryEmit("Draft shared")
                     }
                     is RoomRealtimeEvent.SpinStarted -> append("Spin started")
@@ -100,6 +105,7 @@ class RoomViewModel(application: Application) : AndroidViewModel(application) {
             app.session.clearRoom()
             _inRoom.value = false
             _log.value = emptyList()
+            _sharedDrafts.value = emptyList()
             append("Left room.")
         }
     }

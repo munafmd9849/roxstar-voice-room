@@ -22,7 +22,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Enter a display name. No password or login is used."
+            android:text="Pick a display name to get started."
             android:textAppearance="@style/TextAppearance.RoxStar.Muted" />
 
         <com.google.android.material.card.MaterialCardView
@@ -56,27 +56,45 @@
                         android:maxLength="100" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <com.google.android.material.textfield.TextInputLayout
+                <TextView
+                    android:id="@+id/showServer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:paddingVertical="4dp"
+                    android:text="Use a different server"
+                    android:textColor="@color/md_primary"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:id="@+id/serverPanel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:hint="Backend URL"
-                    app:boxBackgroundMode="outline"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+                    android:orientation="vertical"
+                    android:visibility="gone">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/apiUrl"
+                    <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="textUri" />
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:layout_marginTop="8dp"
+                        android:hint="Server URL"
+                        app:boxBackgroundMode="outline"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/apiUrl"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textUri" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/createUser"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:text="Create user" />
+                    android:text="Continue" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

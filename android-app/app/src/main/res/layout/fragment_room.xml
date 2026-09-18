@@ -16,7 +16,17 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Room"
-            android:textAppearance="@style/TextAppearance.RoxStar.Title" />
+            android:textAppearance="@style/TextAppearance.RoxStar.Title"
+            android:textIsSelectable="true" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/copyCode"
+            style="@style/Widget.RoxStar.Button.Outlined"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Copy room code"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/connection"
@@ -105,6 +115,21 @@
                         android:lineSpacingExtra="4dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Shared drafts"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/sharedDrafts"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Nothing shared yet."
+                android:textAppearance="@style/TextAppearance.RoxStar.Muted" />
 
             <TextView
                 android:layout_width="match_parent"

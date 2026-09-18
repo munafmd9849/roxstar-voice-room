@@ -71,3 +71,22 @@ jobs:
           docker build -t "$IMAGE" -t "$LATEST" ./backend
           docker push "$IMAGE"
           docker push "$LATEST"
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: publish
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+    steps:
+      - name: Deploy image to AWS free-tier EC2
+        if: env.DEPLOY_HOST != ''
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd /opt/roxstar-voice-room
+            bash infrastructure/deploy.sh

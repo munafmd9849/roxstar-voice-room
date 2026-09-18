@@ -15,58 +15,71 @@ constexpr size_t kMaxSeconds = 10 * 60;
 }  // namespace
 
 bool Recorder::start(const std::string& path, bool echo) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  if (state_ == RecordingState::Recording || state_ == RecordingState::Stopping) {
-    lastError_ = "Recording is already in progress.";
-    return false;
-  }
+  capturing_.store(false);
+  closeStream();
 
-  closeStreamLocked();
-  samples_.clear();
-  path_ = path;
-  echoEnabled_ = echo;
-  lastError_.clear();
-  sampleRate_ = kRequestedSampleRate;
-
-  if (!openStreamLocked()) {
-    state_ = RecordingState::Error;
-    if (lastError_.empty()) {
-      lastError_ = "Could not open the microphone stream.";
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (state_ == RecordingState::Recording || state_ == RecordingState::Stopping) {
+      lastError_ = "Recording is already in progress.";
+      return false;
     }
-    return false;
+
+    samples_.clear();
+    path_ = path;
+    echoEnabled_ = echo;
+    lastError_.clear();
+    sampleRate_ = kRequestedSampleRate;
+
+    if (!openStream()) {
+      state_ = RecordingState::Error;
+      if (lastError_.empty()) {
+        lastError_ = "Could not open the microphone stream.";
+      }
+      return false;
+    }
+
+    sampleRate_ = stream_ && stream_->getSampleRate() > 0 ? stream_->getSampleRate() : kRequestedSampleRate;
+    echo_.configure(sampleRate_, echoEnabled_, kEchoDelayMs, kEchoDecay);
+    echo_.reset();
+    samples_.reserve(static_cast<size_t>(sampleRate_) * kMaxSeconds);
+    state_ = RecordingState::Recording;
   }
 
-  sampleRate_ = stream_->getSampleRate() > 0 ? stream_->getSampleRate() : kRequestedSampleRate;
-  echo_.configure(sampleRate_, echoEnabled_, kEchoDelayMs, kEchoDecay);
-  echo_.reset();
-  samples_.reserve(static_cast<size_t>(sampleRate_) * kMaxSeconds);
-
+  capturing_.store(true);
   const oboe::Result started = stream_->requestStart();
   if (started != oboe::Result::OK) {
-    closeStreamLocked();
+    capturing_.store(false);
+    closeStream();
+    std::lock_guard<std::mutex> lock(mutex_);
     state_ = RecordingState::Error;
     lastError_ = "Could not start the microphone stream.";
     __android_log_print(ANDROID_LOG_ERROR, kLogTag, "requestStart failed: %s", oboe::convertToText(started));
     return false;
   }
-
-  state_ = RecordingState::Recording;
   return true;
 }
 
 std::string Recorder::stop() {
+  capturing_.store(false);
+  closeStream();
+
   std::lock_guard<std::mutex> lock(mutex_);
-  if (state_ != RecordingState::Recording) {
+  if (state_ != RecordingState::Recording && state_ != RecordingState::Stopping) {
+    if (state_ == RecordingState::Saved) {
+      return path_;
+    }
     return "";
   }
 
   state_ = RecordingState::Stopping;
-  closeStreamLocked();
 
   if (samples_.empty()) {
     state_ = RecordingState::Error;
-    lastError_ = "No audio was captured.";
-    std::remove(path_.c_str());
+    lastError_ = "No audio was captured. Allow microphone permission and try again.";
+    if (!path_.empty()) {
+      std::remove(path_.c_str());
+    }
     return "";
   }
 
@@ -82,10 +95,9 @@ std::string Recorder::stop() {
 }
 
 void Recorder::cancel() {
+  capturing_.store(false);
+  closeStream();
   std::lock_guard<std::mutex> lock(mutex_);
-  if (state_ == RecordingState::Recording || state_ == RecordingState::Stopping) {
-    closeStreamLocked();
-  }
   samples_.clear();
   if (!path_.empty()) {
     std::remove(path_.c_str());
@@ -101,8 +113,7 @@ void Recorder::setEchoEnabled(bool enabled) {
 }
 
 bool Recorder::isRecording() const {
-  std::lock_guard<std::mutex> lock(mutex_);
-  return state_ == RecordingState::Recording;
+  return capturing_.load() && state() == RecordingState::Recording;
 }
 
 RecordingState Recorder::state() const {
@@ -124,9 +135,16 @@ oboe::DataCallbackResult Recorder::onAudioReady(
     oboe::AudioStream* /*audioStream*/,
     void* audioData,
     int32_t numFrames) {
+  if (!capturing_.load()) {
+    return oboe::DataCallbackResult::Stop;
+  }
   auto* input = static_cast<const int16_t*>(audioData);
+  if (input == nullptr || numFrames <= 0) {
+    return oboe::DataCallbackResult::Continue;
+  }
+
   std::lock_guard<std::mutex> lock(mutex_);
-  if (state_ != RecordingState::Recording || input == nullptr || numFrames <= 0) {
+  if (state_ != RecordingState::Recording) {
     return oboe::DataCallbackResult::Stop;
   }
 
@@ -141,31 +159,42 @@ oboe::DataCallbackResult Recorder::onAudioReady(
 }
 
 void Recorder::onErrorAfterClose(oboe::AudioStream* /*audioStream*/, oboe::Result error) {
-  std::lock_guard<std::mutex> lock(mutex_);
+  capturing_.store(false);
+  std::unique_lock<std::mutex> lock(mutex_, std::try_to_lock);
+  if (!lock.owns_lock()) {
+    return;
+  }
+  stream_.reset();
   if (state_ == RecordingState::Recording) {
-    stream_.reset();
     state_ = RecordingState::Error;
     lastError_ = "The microphone stream stopped unexpectedly.";
     __android_log_print(ANDROID_LOG_ERROR, kLogTag, "stream error: %s", oboe::convertToText(error));
   }
 }
 
-bool Recorder::openStreamLocked() {
-  oboe::AudioStreamBuilder builder;
-  builder.setDirection(oboe::Direction::Input)
-      ->setPerformanceMode(oboe::PerformanceMode::LowLatency)
-      ->setSharingMode(oboe::SharingMode::Shared)
-      ->setFormat(oboe::AudioFormat::I16)
-      ->setChannelCount(oboe::ChannelCount::Mono)
-      ->setSampleRate(kRequestedSampleRate)
-      ->setSampleRateConversionQuality(oboe::SampleRateConversionQuality::Medium)
-      ->setDataCallback(this)
-      ->setErrorCallback(this);
+bool Recorder::openStream() {
+  auto tryOpen = [this](oboe::AudioApi api, oboe::PerformanceMode performance) -> oboe::Result {
+    oboe::AudioStreamBuilder builder;
+    builder.setDirection(oboe::Direction::Input)
+        ->setAudioApi(api)
+        ->setPerformanceMode(performance)
+        ->setSharingMode(oboe::SharingMode::Shared)
+        ->setFormat(oboe::AudioFormat::I16)
+        ->setChannelCount(oboe::ChannelCount::Mono)
+        ->setSampleRate(kRequestedSampleRate)
+        ->setSampleRateConversionQuality(oboe::SampleRateConversionQuality::Medium)
+        ->setInputPreset(oboe::InputPreset::VoiceRecognition)
+        ->setDataCallback(this)
+        ->setErrorCallback(this);
+    return builder.openStream(stream_);
+  };
 
-  oboe::Result result = builder.openStream(stream_);
+  oboe::Result result = tryOpen(oboe::AudioApi::Unspecified, oboe::PerformanceMode::LowLatency);
   if (result != oboe::Result::OK) {
-    builder.setPerformanceMode(oboe::PerformanceMode::None);
-    result = builder.openStream(stream_);
+    result = tryOpen(oboe::AudioApi::Unspecified, oboe::PerformanceMode::None);
+  }
+  if (result != oboe::Result::OK) {
+    result = tryOpen(oboe::AudioApi::OpenSLES, oboe::PerformanceMode::None);
   }
 
   if (result != oboe::Result::OK || !stream_) {
@@ -177,13 +206,14 @@ bool Recorder::openStreamLocked() {
   return true;
 }
 
-void Recorder::closeStreamLocked() {
-  if (!stream_) {
+void Recorder::closeStream() {
+  auto local = stream_;
+  stream_.reset();
+  if (!local) {
     return;
   }
-  stream_->requestStop();
-  stream_->close();
-  stream_.reset();
+  local->requestStop();
+  local->close();
 }
 
 int32_t Recorder::durationMsLocked() const {

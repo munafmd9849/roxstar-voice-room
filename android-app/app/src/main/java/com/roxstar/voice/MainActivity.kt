@@ -3,9 +3,12 @@ package com.roxstar.voice
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.roxstar.voice.audio.NativeRecorder
+import com.roxstar.voice.data.remote.UserIdRequest
 import com.roxstar.voice.ui.HomeFragment
 import com.roxstar.voice.ui.NameSetupFragment
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,14 +44,34 @@ class MainActivity : AppCompatActivity() {
             .commit()
     }
 
+    fun logout() {
+        lifecycleScope.launch {
+            val app = RoxStarApp.instance
+            val roomId = app.session.currentRoomId
+            val userId = app.session.userId
+            runCatching { app.sockets.shutdown() }
+            if (roomId != null && userId != null) {
+                runCatching { app.api.call { leaveRoom(roomId, UserIdRequest(userId)) } }
+            }
+            app.session.clearUser()
+            viewModelStore.clear()
+            supportFragmentManager.popBackStack(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.container, NameSetupFragment())
+                .commit()
+        }
+    }
+
     override fun onSupportNavigateUp(): Boolean {
         onBackPressedDispatcher.onBackPressed()
         return true
     }
 
     override fun onDestroy() {
-        if (isFinishing && NativeRecorder.isRecording()) {
-            NativeRecorder.cancel()
+        runCatching {
+            if (isFinishing && NativeRecorder.isRecording()) {
+                NativeRecorder.cancel()
+            }
         }
         super.onDestroy()
     }

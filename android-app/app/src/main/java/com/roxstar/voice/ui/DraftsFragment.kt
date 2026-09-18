@@ -64,11 +64,18 @@ class DraftsFragment : Fragment() {
     }
 
     private fun delete(draft: DraftEntity) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            stopPlayback()
-            RoxStarApp.instance.drafts.delete(draft)
-            Toast.makeText(requireContext(), "Deleted ${draft.name}", Toast.LENGTH_SHORT).show()
-        }
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle("Delete draft?")
+            .setMessage("This removes “${draft.name}” from this phone.")
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Delete") { _, _ ->
+                viewLifecycleOwner.lifecycleScope.launch {
+                    stopPlayback()
+                    RoxStarApp.instance.drafts.delete(draft)
+                    Toast.makeText(requireContext(), "Deleted ${draft.name}", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .show()
     }
 
     private fun stopPlayback() {

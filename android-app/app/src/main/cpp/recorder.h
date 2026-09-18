@@ -2,6 +2,7 @@
 
 #include <oboe/Oboe.h>
 
+#include <atomic>
 #include <cstdint>
 #include <memory>
 #include <mutex>
@@ -39,11 +40,12 @@ class Recorder : public oboe::AudioStreamDataCallback, public oboe::AudioStreamE
   void onErrorAfterClose(oboe::AudioStream* audioStream, oboe::Result error) override;
 
  private:
-  bool openStreamLocked();
-  void closeStreamLocked();
+  bool openStream();
+  void closeStream();
   int32_t durationMsLocked() const;
 
   mutable std::mutex mutex_;
+  std::atomic<bool> capturing_{false};
   std::shared_ptr<oboe::AudioStream> stream_;
   EchoProcessor echo_;
   std::vector<int16_t> samples_;

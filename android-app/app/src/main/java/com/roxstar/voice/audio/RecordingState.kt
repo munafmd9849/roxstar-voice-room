@@ -8,3 +8,12 @@ enum class RecordingState {
     CANCELLED,
     ERROR
 }
+
+fun RecordingState.label(): String = when (this) {
+    RecordingState.IDLE -> "Ready"
+    RecordingState.RECORDING -> "Recording"
+    RecordingState.STOPPING -> "Saving"
+    RecordingState.SAVED -> "Saved"
+    RecordingState.CANCELLED -> "Cancelled"
+    RecordingState.ERROR -> "Error"
+}

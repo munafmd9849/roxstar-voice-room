@@ -29,11 +29,12 @@ class DraftRepository(
         val localId = UUID.randomUUID().toString()
         val destination = File(draftsDir, "$localId.wav")
         val source = File(wavPath)
+        if (!source.exists() || source.length() < 44L) {
+            throw IllegalStateException("Recording file is missing. Record again and tap Stop, then Save.")
+        }
         if (source.absolutePath != destination.absolutePath) {
-            if (!source.renameTo(destination)) {
-                source.copyTo(destination, overwrite = true)
-                source.delete()
-            }
+            source.copyTo(destination, overwrite = true)
+            source.delete()
         }
 
         var backendId: String? = null

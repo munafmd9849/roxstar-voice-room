@@ -13,9 +13,9 @@ android {
         applicationId = "com.roxstar.voice"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
-        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3000\"")
+        versionCode = 3
+        versionName = "1.1"
+        buildConfigField("String", "API_BASE_URL", "\"https://roxstar.13.206.134.123.sslip.io\"")
         ndk {
             abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
         }
@@ -30,7 +30,15 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
+            isShrinkResources = false
+            signingConfig = signingConfigs.getByName("debug")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
         }
     }
 

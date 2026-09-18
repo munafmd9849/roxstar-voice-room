@@ -28,9 +28,10 @@ class ApiClient(initialBaseUrl: String) {
         private set
 
     private val http = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(20, TimeUnit.SECONDS)
-        .writeTimeout(20, TimeUnit.SECONDS)
+        .connectTimeout(8, TimeUnit.SECONDS)
+        .readTimeout(12, TimeUnit.SECONDS)
+        .writeTimeout(12, TimeUnit.SECONDS)
+        .callTimeout(15, TimeUnit.SECONDS)
         .addInterceptor(
             HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC }
         )

@@ -14,7 +14,9 @@
         android:elevation="4dp"
         app:title="@string/app_name"
         app:titleTextColor="@color/md_on_primary"
-        app:navigationIconTint="@color/md_on_primary" />
+        app:navigationIconTint="@color/md_on_primary"
+        android:theme="@style/ThemeOverlay.Material3.Dark.ActionBar"
+        app:popupTheme="@style/ThemeOverlay.Material3.Light" />
 
     <FrameLayout
         android:id="@+id/container"
